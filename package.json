@@ -1,0 +1,27 @@
+{
+  "name": "starzstyle",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "node scripts/upload-s3-assets.mjs",
+    "dev": "next dev",
+    "build": "next build",
+    "prestart": "node scripts/upload-s3-assets.mjs",
+    "start": "next start",
+    "s3:upload": "node scripts/upload-s3-assets.mjs",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1136.0",
+    "lucide-react": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "latest"
+  }
+}

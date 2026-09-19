@@ -1,0 +1,21 @@
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "StarzStyle Dress Shop",
+    short_name: "StarzStyle",
+    description: "Contemporary dresses and occasion wear.",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#fff7ed",
+    theme_color: "#7d1236",
+    icons: [
+      {
+        src: "/favicon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+    ],
+  };
+}
