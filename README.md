@@ -48,6 +48,12 @@ npm run build
 npm start
 ```
 
+`npm run build` creates a static deployment in `out/`. The generated `out/`
+folder is committed for the classroom EC2 demo, so the small EC2 instance does
+not need to compile Next.js. On EC2, clone the repository, install dependencies,
+set the S3 variables, and run `npm start`. The prestart uploader copies the
+images to S3, then Python serves the prebuilt site on `PORT` (8080 by default).
+
 The current version is a front-end demonstration. The RDS variables in `.env.example` are reserved for a future product/order backend and are not currently read by the site.
 
 Orders are demo-only and remain in browser memory; submitting the checkout does not charge a customer or write an order to RDS.

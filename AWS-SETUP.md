@@ -69,7 +69,7 @@ Attach `StarzStyleEC2Role` from **EC2 → Instances → Actions → Security →
 
 ```text
 SSH         TCP 22     Your IP only
-Custom TCP  TCP 3000   Your IP for classroom testing
+Custom TCP  TCP 8080   Your IP for classroom testing
 HTTP        TCP 80     0.0.0.0/0 if you later configure Nginx
 HTTPS       TCP 443    0.0.0.0/0 if you later configure HTTPS
 ```
@@ -78,27 +78,24 @@ HTTPS       TCP 443    0.0.0.0/0 if you later configure HTTPS
 
 ```bash
 sudo dnf update -y
-sudo dnf install -y git nodejs
+sudo dnf install -y git nodejs20 python3
 
-git clone https://github.com/YOUR_USERNAME/StarzStyle.git
-cd StarzStyle
+git clone https://github.com/monasri001/starzstyle.git
+cd starzstyle
 
 export SHOP_NAME="StarzStyle"
 export S3_BUCKET="starzstyle-dress-shop-987654"
 export S3_REGION="ap-south-1"
 export S3_PREFIX="images"
-export DB_HOST="starzstyle-db.CHANGE-ME.ap-south-1.rds.amazonaws.com"
-export DB_PORT="5432"
-export DB_NAME="starzstyle"
-export DB_USER="postgres"
-export DB_PASS="YOUR_PRIVATE_DATABASE_PASSWORD"
 export NODE_ENV="production"
-export PORT="3000"
+export PORT="8080"
 
-npm install
-npm run build
+npm ci
 npm start
 ```
+
+The static website is already compiled in the committed `out/` directory, so
+do not run `npm run build` on the 1 GiB EC2 classroom instance.
 
 When `npm start` runs, npm automatically invokes `prestart`, which executes `scripts/upload-s3-assets.mjs`. Each file in `public/images` is uploaded to:
 
@@ -125,7 +122,7 @@ curl http://localhost:3000
 Then open:
 
 ```text
-http://YOUR_EC2_PUBLIC_IP:3000
+http://YOUR_EC2_PUBLIC_IP:8080
 ```
 
 ## 7. RDS note
