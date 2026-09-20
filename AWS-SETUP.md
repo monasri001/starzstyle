@@ -89,6 +89,14 @@ export S3_REGION="ap-south-1"
 export S3_PREFIX="images"
 export NODE_ENV="production"
 export PORT="8080"
+export APP_HOST="0.0.0.0"
+export DB_HOST="YOUR_RDS_ENDPOINT.ap-south-1.rds.amazonaws.com"
+export DB_PORT="5432"
+export DB_NAME="starzstyle"
+export DB_USER="postgres"
+export DB_PASS="YOUR_RDS_PASSWORD"
+export DB_SSL="true"
+export DB_SSL_REJECT_UNAUTHORIZED="false"
 
 npm ci
 npm start
@@ -103,7 +111,7 @@ When `npm start` runs, npm automatically invokes `prestart`, which executes `scr
 s3://starzstyle-dress-shop-987654/images/
 ```
 
-The website then starts on port 3000.
+The website and its order API then start on port 8080.
 
 ## 6. Verify the upload
 
@@ -116,7 +124,7 @@ npm run s3:upload
 Check the application locally on EC2:
 
 ```bash
-curl http://localhost:3000
+curl http://localhost:8080/api/health
 ```
 
 Then open:
@@ -125,6 +133,24 @@ Then open:
 http://YOUR_EC2_PUBLIC_IP:8080
 ```
 
-## 7. RDS note
+## 7. RDS order storage
 
-The current classroom website is a front-end demo. It does not yet query PostgreSQL, so RDS is optional for this version. Keep an RDS PostgreSQL instance private, in the same VPC as EC2, and allow port 5432 only from the EC2 security group when the backend is added.
+Create a PostgreSQL RDS instance with database name `starzstyle`. Keep it
+private and in the same VPC as EC2. On the RDS security group, allow PostgreSQL
+TCP port 5432 with the **EC2 security group as the source**—never `0.0.0.0/0`.
+
+At startup, `server.mjs` connects using the `DB_*` variables and automatically
+creates the `orders` and `order_items` tables. The browser never receives the
+database password. Successful checkouts are written through `POST /api/orders`.
+
+Verify the connection after starting the application:
+
+```bash
+curl http://localhost:8080/api/health
+```
+
+Expected response:
+
+```json
+{"website":"ok","database":"connected"}
+```

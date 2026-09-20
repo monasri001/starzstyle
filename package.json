@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "prestart": "node scripts/upload-s3-assets.mjs",
-    "start": "python3 -m http.server ${PORT:-8080} --directory out",
+    "start": "node server.mjs",
     "s3:upload": "node scripts/upload-s3-assets.mjs",
     "lint": "next lint"
   },
@@ -15,6 +15,7 @@
     "@aws-sdk/client-s3": "^3.1136.0",
     "lucide-react": "latest",
     "next": "latest",
+    "pg": "^8.23.0",
     "react": "latest",
     "react-dom": "latest"
   },

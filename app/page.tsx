@@ -39,6 +39,8 @@ export default function Home() {
   const [orderNumber, setOrderNumber] = useState("");
   const [completedOrder, setCompletedOrder] = useState<CompletedOrder | null>(null);
   const [downloadingOrder, setDownloadingOrder] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [orderError, setOrderError] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
   const visibleProducts = useMemo(
@@ -57,6 +59,7 @@ export default function Home() {
   const addToCart = (product: Product) => {
     setOrderNumber("");
     setCompletedOrder(null);
+    setOrderError("");
     setCart((current) => {
       const existing = current.find((line) => line.product.id === product.id);
       return existing
@@ -72,24 +75,43 @@ export default function Home() {
       .filter((line) => line.quantity > 0));
   };
 
-  const placeOrder = (event: FormEvent<HTMLFormElement>) => {
+  const placeOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const name = String(form.get("name") || "").trim();
     const address = String(form.get("address") || "").trim();
     if (!name || !address || cart.length === 0) return;
 
-    const nextOrderNumber = `SS-${Date.now().toString().slice(-6)}`;
-    setCompletedOrder({
+    const nextOrderNumber = `SS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const order: CompletedOrder = {
       orderNumber: nextOrderNumber,
       name,
       address,
       items: cart.map((line) => ({ ...line })),
       subtotal,
-      placedAt: new Date().toLocaleString("en-IN"),
-    });
-    setOrderNumber(nextOrderNumber);
-    setCart([]);
+      placedAt: new Date().toISOString(),
+    };
+
+    setSavingOrder(true);
+    setOrderError("");
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(order),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || `Order API returned ${response.status}`);
+
+      setCompletedOrder(order);
+      setOrderNumber(result.orderNumber || nextOrderNumber);
+      setCart([]);
+    } catch (error) {
+      console.error("Unable to store the order in RDS", error);
+      setOrderError(error instanceof Error ? error.message : "Unable to store the order. Please try again.");
+    } finally {
+      setSavingOrder(false);
+    }
   };
 
   const downloadOrderDetails = async () => {
@@ -177,7 +199,7 @@ export default function Home() {
       {searchOpen && <div className="modal-layer" role="dialog" aria-modal="true" aria-label="Search products"><button className="layer-backdrop" onClick={() => setSearchOpen(false)} aria-label="Close search" /><section className="search-panel"><div className="panel-head"><h2>Search StarzStyle</h2><button onClick={() => setSearchOpen(false)} aria-label="Close search"><X /></button></div><div className="search-field"><Search size={20} /><input autoFocus value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search dresses, colours, occasions…" /></div><div className="search-results">{searchResults.map((product) => <button key={product.id} onClick={() => { addToCart(product); setSearchOpen(false); }}><Image src={product.image} alt="" width={58} height={72} /><span><strong>{product.name}</strong><small>{product.category} · ₹{product.price.toLocaleString("en-IN")}</small></span><Plus size={18} /></button>)}</div></section></div>}
 
       {cartOpen && <div className="modal-layer cart-layer" role="dialog" aria-modal="true" aria-label="Shopping bag"><button className="layer-backdrop" onClick={() => setCartOpen(false)} aria-label="Close shopping bag" /><aside className="cart-panel"><div className="panel-head"><div><p>Your bag</p><h2>{orderNumber ? "Order confirmed" : `${cartCount} ${cartCount === 1 ? "item" : "items"}`}</h2></div><button onClick={() => setCartOpen(false)} aria-label="Close shopping bag"><X /></button></div>
-        {orderNumber ? <div className="order-success"><span><Check size={28} /></span><h3>Thank you for your order.</h3><p>Your demo order <strong>{orderNumber}</strong> has been placed successfully.</p><div className="order-actions"><button type="button" className="download-order" onClick={downloadOrderDetails} disabled={downloadingOrder}><Download size={18} /> {downloadingOrder ? "Generating with Lambda…" : "Download order details"}</button><button type="button" className="continue-shopping" onClick={() => { setOrderNumber(""); setCompletedOrder(null); setCartOpen(false); }}>Continue shopping</button></div></div> : cart.length === 0 ? <div className="empty-cart"><ShoppingBag size={36} /><h3>Your bag is empty</h3><p>Add a dress you love and it will appear here.</p><button onClick={() => setCartOpen(false)}>Browse dresses</button></div> : <><div className="cart-lines">{cart.map(({ product, quantity }) => <article className="cart-line" key={product.id}><div className="cart-thumb"><Image src={product.image} alt={product.name} fill sizes="88px" /></div><div className="cart-line-info"><h3>{product.name}</h3><p>{product.color}</p><div className="quantity"><button onClick={() => changeQuantity(product.id, -1)} aria-label={`Decrease ${product.name} quantity`}><Minus size={15} /></button><span>{quantity}</span><button onClick={() => changeQuantity(product.id, 1)} aria-label={`Increase ${product.name} quantity`}><Plus size={15} /></button></div></div><div className="cart-line-price"><strong>₹{(product.price * quantity).toLocaleString("en-IN")}</strong><button onClick={() => setCart((current) => current.filter((line) => line.product.id !== product.id))} aria-label={`Remove ${product.name}`}><Trash2 size={17} /></button></div></article>)}</div><div className="cart-total"><span>Subtotal</span><strong>₹{subtotal.toLocaleString("en-IN")}</strong></div><p className="shipping-note" id="delivery">Free shipping · Cash on delivery available</p><form className="checkout-form" onSubmit={placeOrder}><h3>Delivery details</h3><label htmlFor="customer-name">Full name</label><input id="customer-name" name="name" autoComplete="name" placeholder="Your full name" required /><label htmlFor="customer-address">Delivery address</label><textarea id="customer-address" name="address" autoComplete="street-address" placeholder="House number, street, city, state and PIN code" rows={4} required /><button type="submit">Place order · ₹{subtotal.toLocaleString("en-IN")} <ArrowRight size={18} /></button><small>Demo checkout — no payment will be collected.</small></form></>}
+        {orderNumber ? <div className="order-success"><span><Check size={28} /></span><h3>Thank you for your order.</h3><p>Your demo order <strong>{orderNumber}</strong> has been saved in RDS.</p><div className="order-actions"><button type="button" className="download-order" onClick={downloadOrderDetails} disabled={downloadingOrder}><Download size={18} /> {downloadingOrder ? "Generating with Lambda…" : "Download order details"}</button><button type="button" className="continue-shopping" onClick={() => { setOrderNumber(""); setCompletedOrder(null); setCartOpen(false); }}>Continue shopping</button></div></div> : cart.length === 0 ? <div className="empty-cart"><ShoppingBag size={36} /><h3>Your bag is empty</h3><p>Add a dress you love and it will appear here.</p><button onClick={() => setCartOpen(false)}>Browse dresses</button></div> : <><div className="cart-lines">{cart.map(({ product, quantity }) => <article className="cart-line" key={product.id}><div className="cart-thumb"><Image src={product.image} alt={product.name} fill sizes="88px" /></div><div className="cart-line-info"><h3>{product.name}</h3><p>{product.color}</p><div className="quantity"><button onClick={() => changeQuantity(product.id, -1)} aria-label={`Decrease ${product.name} quantity`}><Minus size={15} /></button><span>{quantity}</span><button onClick={() => changeQuantity(product.id, 1)} aria-label={`Increase ${product.name} quantity`}><Plus size={15} /></button></div></div><div className="cart-line-price"><strong>₹{(product.price * quantity).toLocaleString("en-IN")}</strong><button onClick={() => setCart((current) => current.filter((line) => line.product.id !== product.id))} aria-label={`Remove ${product.name}`}><Trash2 size={17} /></button></div></article>)}</div><div className="cart-total"><span>Subtotal</span><strong>₹{subtotal.toLocaleString("en-IN")}</strong></div><p className="shipping-note" id="delivery">Free shipping · Cash on delivery available</p><form className="checkout-form" onSubmit={placeOrder}><h3>Delivery details</h3><label htmlFor="customer-name">Full name</label><input id="customer-name" name="name" autoComplete="name" placeholder="Your full name" required disabled={savingOrder} /><label htmlFor="customer-address">Delivery address</label><textarea id="customer-address" name="address" autoComplete="street-address" placeholder="House number, street, city, state and PIN code" rows={4} required disabled={savingOrder} />{orderError && <p className="order-error" role="alert">{orderError}</p>}<button type="submit" disabled={savingOrder}>{savingOrder ? "Saving order to RDS…" : <>Place order · ₹{subtotal.toLocaleString("en-IN")} <ArrowRight size={18} /></>}</button><small>Demo checkout — no payment will be collected.</small></form></>}
       </aside></div>}
     </main>
   );

@@ -13,6 +13,9 @@ Open `http://localhost:3000`.
 
 If `S3_BUCKET` is not set, the startup uploader is skipped and the website continues using its local images.
 
+`npm run dev` previews the frontend. To test RDS checkout locally, configure
+the `DB_*` variables, run `npm run build`, and then run `npm start`.
+
 ## Automatic S3 image upload
 
 All files under `public/images` are uploaded automatically before both `npm run dev` and `npm start`.
@@ -51,9 +54,35 @@ npm start
 `npm run build` creates a static deployment in `out/`. The generated `out/`
 folder is committed for the classroom EC2 demo, so the small EC2 instance does
 not need to compile Next.js. On EC2, clone the repository, install dependencies,
-set the S3 variables, and run `npm start`. The prestart uploader copies the
-images to S3, then Python serves the prebuilt site on `PORT` (8080 by default).
+set the S3 and RDS variables, and run `npm start`. The prestart uploader copies
+the images to S3, then `server.mjs` serves the website and the order API on
+`PORT` (8080 by default).
 
-The current version is a front-end demonstration. The RDS variables in `.env.example` are reserved for a future product/order backend and are not currently read by the site.
+## RDS order storage
 
-Orders are demo-only and remain in browser memory; submitting the checkout does not charge a customer or write an order to RDS.
+The checkout sends each completed order to `POST /api/orders`. The EC2 Node
+server validates products and prices, creates the `orders` and `order_items`
+tables when necessary, and saves the order in PostgreSQL RDS. Database
+credentials are read only by `server.mjs`; do not prefix them with
+`NEXT_PUBLIC_`.
+
+Required runtime variables:
+
+```env
+DB_HOST=your-rds-endpoint.ap-south-1.rds.amazonaws.com
+DB_PORT=5432
+DB_NAME=starzstyle
+DB_USER=postgres
+DB_PASS=your-password
+DB_SSL=true
+DB_SSL_REJECT_UNAUTHORIZED=false
+```
+
+The database named by `DB_NAME` must already exist. Tables and indexes are
+created automatically. A readable copy of the schema is in `db/schema.sql`.
+
+Check both the website and database connection with:
+
+```bash
+curl http://localhost:8080/api/health
+```
