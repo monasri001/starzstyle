@@ -177,7 +177,10 @@ async function saveOrder(order) {
 
 async function handleCreateOrder(request, response) {
   if (!pool) {
-    sendJson(response, 503, { message: "RDS is not configured on this server." });
+    sendJson(response, 503, {
+      code: "RDS_NOT_CONFIGURED",
+      message: "RDS is not configured on this server.",
+    });
     return;
   }
 

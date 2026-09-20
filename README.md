@@ -66,6 +66,11 @@ tables when necessary, and saves the order in PostgreSQL RDS. Database
 credentials are read only by `server.mjs`; do not prefix them with
 `NEXT_PUBLIC_`.
 
+When RDS is not configured, such as during local frontend development, checkout
+falls back to browser local storage under `starzstyle-demo-orders`. If RDS is
+configured but unavailable, checkout displays the database error and does not
+claim that the order was saved.
+
 Required runtime variables:
 
 ```env
